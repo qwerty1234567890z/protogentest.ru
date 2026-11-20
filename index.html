@@ -1,186 +1,878 @@
+```html
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101713">
+
 <title>Файлы — protogentest.ru</title>
+
 <style>
-  :root{--bg:#fbfbf9;--fg:#1d2321;--muted:#68726e;--line:#dcdfdb;--accent:#0f6b5c;--accent-fg:#fff;--err:#b3261e;--ok:#0f6b5c}
-  @media (prefers-color-scheme:dark){
-    :root{--bg:#141817;--fg:#e8ece9;--muted:#98a39e;--line:#2d3532;--accent:#4fc3ad;--accent-fg:#0b1512;--err:#ff8a80;--ok:#4fc3ad}
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
-  main{max-width:44rem;margin:0 auto;padding:2.5rem 1.2rem 4rem}
-  h1{font-size:2rem;margin:0 0 .3rem;letter-spacing:-.01em}
-  h2{font-size:1.25rem;margin:3rem 0 .3rem}
-  .lead{color:var(--muted);margin:0 0 1.5rem}
-  input,textarea,button{font:inherit;color:inherit}
-  input,textarea{width:100%;padding:.6rem .7rem;border:1px solid var(--line);border-radius:6px;background:transparent}
-  input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-  label{display:block;margin:1rem 0 .25rem;font-weight:600}
-  .hint{color:var(--muted);font-size:.9rem;margin:0 0 .3rem}
-  button.primary{margin-top:1.1rem;padding:.6rem 1.2rem;border:0;border-radius:6px;background:var(--accent);color:var(--accent-fg);font-weight:600;cursor:pointer}
-  button.dl{padding:.4rem .9rem;border:1px solid var(--accent);border-radius:6px;background:transparent;color:var(--accent);cursor:pointer;white-space:nowrap}
-  button:disabled{opacity:.55;cursor:default}
-  .file{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.75rem 0;border-bottom:1px solid var(--line)}
-  .file .name{overflow-wrap:anywhere}
-  .file small{color:var(--muted);margin-left:.4rem}
-  #list{margin-top:1rem}
-  .empty{color:var(--muted);padding:1rem 0}
-  #status{min-height:1.5rem;margin:.8rem 0 0}
-  #status.ok{color:var(--ok)} #status.err{color:var(--err)}
-  .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+:root {
+    color-scheme: light;
+    --bg: #f4f7f5;
+    --surface: #ffffff;
+    --surface-hover: #edf4f0;
+    --fg: #19241e;
+    --muted: #718078;
+    --line: #e0e8e3;
+    --accent: #138568;
+    --accent-hover: #0d7056;
+    --accent-soft: #e2f4ec;
+    --danger: #c34242;
+    --shadow: 0 8px 30px rgba(20, 50, 35, .05);
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+        --bg: #101713;
+        --surface: #19231e;
+        --surface-hover: #222f28;
+        --fg: #e8f0eb;
+        --muted: #99aaa0;
+        --line: #2c3931;
+        --accent: #4bc49b;
+        --accent-hover: #69d5ad;
+        --accent-soft: #203b30;
+        --danger: #ff8585;
+        --shadow: 0 8px 30px rgba(0, 0, 0, .15);
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--fg);
+    font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+button, input, textarea {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+.container {
+    width: min(760px, calc(100% - 32px));
+    margin: 0 auto;
+    padding: 55px 0 70px;
+}
+
+/* HEADER */
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 35px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo {
+    width: 43px;
+    height: 43px;
+    display: grid;
+    place-items: center;
+    border-radius: 13px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 23px;
+}
+
+.brand-name {
+    font-size: 17px;
+    font-weight: 750;
+    letter-spacing: -.4px;
+}
+
+.brand-sub {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+/* INTRO */
+
+h1 {
+    margin: 0;
+    font-size: clamp(29px, 6vw, 39px);
+    letter-spacing: -1.4px;
+    line-height: 1.2;
+}
+
+.description {
+    color: var(--muted);
+    margin: 10px 0 25px;
+}
+
+/* SEARCH */
+
+.search-wrap {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    pointer-events: none;
+}
+
+#search {
+    width: 100%;
+    padding: 13px 15px 13px 43px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--fg);
+    outline: none;
+    transition: border .2s, box-shadow .2s;
+}
+
+#search:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+/* FILE LIST */
+
+.catalog {
+    padding: 8px 17px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+.folder {
+    border-bottom: 1px solid var(--line);
+}
+
+.folder:last-child {
+    border-bottom: none;
+}
+
+.folder summary {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 3px;
+    cursor: pointer;
+    list-style: none;
+    font-weight: 650;
+    user-select: none;
+}
+
+.folder summary::-webkit-details-marker {
+    display: none;
+}
+
+.arrow {
+    color: var(--muted);
+    font-size: 11px;
+    transition: transform .18s;
+}
+
+.folder[open] > summary .arrow {
+    transform: rotate(90deg);
+}
+
+.folder-icon {
+    font-size: 19px;
+}
+
+.folder-content {
+    padding-left: 23px;
+    padding-bottom: 5px;
+}
+
+.file {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 5px;
+    border-top: 1px solid var(--line);
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.file-icon {
+    flex-shrink: 0;
+    color: var(--accent);
+    font-size: 18px;
+}
+
+.file-name {
+    overflow-wrap: anywhere;
+    font-weight: 550;
+}
+
+.file-size {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 1px;
+}
+
+.download {
+    flex-shrink: 0;
+    padding: 7px 12px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--fg);
+    font-size: 13px;
+    transition: .2s;
+}
+
+.download:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+}
+
+.download:disabled {
+    opacity: .5;
+    cursor: wait;
+}
+
+.empty {
+    padding: 28px 12px;
+    color: var(--muted);
+    text-align: center;
+}
+
+.error {
+    color: var(--danger);
+}
+
+/* SECTION */
+
+.section {
+    margin-top: 48px;
+}
+
+.section h2 {
+    margin: 0;
+    font-size: 22px;
+    letter-spacing: -.5px;
+}
+
+.section-description {
+    color: var(--muted);
+    margin: 7px 0 18px;
+}
+
+/* FORM */
+
+.form-card {
+    padding: 22px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: var(--shadow);
+}
+
+label {
+    display: block;
+    margin: 0 0 7px;
+    font-weight: 650;
+}
+
+.field {
+    margin-bottom: 17px;
+}
+
+.field input,
+.field textarea {
+    width: 100%;
+    padding: 11px 13px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--bg);
+    color: var(--fg);
+    outline: none;
+    resize: vertical;
+}
+
+.field input:focus,
+.field textarea:focus {
+    border-color: var(--accent);
+}
+
+.field textarea {
+    min-height: 125px;
+}
+
+.hint {
+    margin: 0 0 7px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.primary {
+    width: 100%;
+    padding: 12px 18px;
+    border: 0;
+    border-radius: 9px;
+    background: var(--accent);
+    color: #fff;
+    font-weight: 700;
+    transition: background .2s;
+}
+
+.primary:hover {
+    background: var(--accent-hover);
+}
+
+.primary:disabled {
+    opacity: .6;
+    cursor: wait;
+}
+
+#status {
+    min-height: 24px;
+    margin: 12px 0 0;
+    font-size: 13px;
+}
+
+#status.ok {
+    color: var(--accent);
+}
+
+#status.err {
+    color: var(--danger);
+}
+
+.hp {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    opacity: 0;
+}
+
+/* FOOTER */
+
+footer {
+    margin-top: 45px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    color: var(--muted);
+    text-align: center;
+    font-size: 12px;
+}
+
+footer a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding-top: 30px;
+    }
+
+    .form-card {
+        padding: 17px;
+    }
+
+    .catalog {
+        padding: 6px 12px;
+    }
+
+    .folder-content {
+        padding-left: 12px;
+    }
+
+    .download {
+        padding: 6px 9px;
+    }
+}
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+}
 </style>
 </head>
+
 <body>
-<main>
-  <h1>Файлы</h1>
-  <p class="lead">Выберите файл и скачайте. Если нужного нет, оставьте запрос ниже.</p>
+<main class="container">
 
-  <input id="search" type="search" placeholder="Поиск по названию" aria-label="Поиск по названию">
-  <div id="list" aria-live="polite">Загрузка…</div>
+    <header class="header">
+        <div class="brand">
+            <div class="logo">⌘</div>
+            <div>
+                <div class="brand-name">protogentest.ru</div>
+                <div class="brand-sub">Каталог файлов</div>
+            </div>
+        </div>
+    </header>
 
-  <h2>Не нашли нужный файл?</h2>
-  <p class="lead">Опишите, что нужно. Я напишу вам в Telegram, когда он будет готов.</p>
+    <section>
+        <h1>Файлы</h1>
+        <p class="description">
+            Скрипты, проекты и другие полезные материалы.
+            Выбери нужный файл и скачай его.
+        </p>
 
-  <form id="form" novalidate>
-    <label for="text">Что нужно сделать</label>
-    <p class="hint">Требования, версия, язык, любые детали.</p>
-    <textarea id="text" rows="6" maxlength="1500" required></textarea>
+        <div class="search-wrap">
+            <span class="search-icon">⌕</span>
+            <input
+                id="search"
+                type="search"
+                placeholder="Поиск по файлам и папкам..."
+                aria-label="Поиск по файлам и папкам"
+            >
+        </div>
 
-    <label for="contact">Ваш Telegram</label>
-    <input id="contact" placeholder="@username" autocomplete="off" required>
+        <div class="catalog" id="list" aria-live="polite">
+            <div class="empty">Загрузка файлов...</div>
+        </div>
+    </section>
 
-    <input class="hp" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
-    <button class="primary" id="send" type="submit">Отправить запрос</button>
-    <p id="status" role="status"></p>
-  </form>
+    <section class="section">
+        <h2>Не нашли нужный файл?</h2>
+        <p class="section-description">
+            Опишите, что вам нужно. Я свяжусь с вами в Telegram,
+            когда файл будет готов.
+        </p>
+
+        <form class="form-card" id="form" novalidate>
+
+            <div class="field">
+                <label for="text">Что нужно сделать?</label>
+                <p class="hint">
+                    Требования, версия, язык программирования и другие детали.
+                </p>
+                <textarea
+                    id="text"
+                    maxlength="1500"
+                    required
+                    placeholder="Например: нужен скрипт передвижения персонажа для Unity..."
+                ></textarea>
+            </div>
+
+            <div class="field">
+                <label for="contact">Ваш Telegram</label>
+                <input
+                    id="contact"
+                    placeholder="@username"
+                    autocomplete="off"
+                    required
+                >
+            </div>
+
+            <input
+                class="hp"
+                id="website"
+                tabindex="-1"
+                autocomplete="off"
+                aria-hidden="true"
+            >
+
+            <button class="primary" id="send" type="submit">
+                Отправить запрос
+            </button>
+
+            <p id="status" role="status"></p>
+        </form>
+    </section>
+
+    <footer>
+        <p>protogentest.ru · Каталог файлов</p>
+        <p>
+            <a
+                href="https://github.com/qwerty1234567890z/protogentest.ru"
+                target="_blank"
+                rel="noopener"
+            >GitHub</a>
+        </p>
+    </footer>
+
 </main>
 
 <script>
-// ====== НАСТРОЙКИ ======
+// ===============================
+// НАСТРОЙКИ
+// ===============================
+
 const CONFIG = {
-  owner:  'qwerty1234567890z',                          // ваш логин на GitHub
-  repo:   'protogentest.ru',                                 // репозиторий, где лежат файлы
-  path:   'files',                                // папка с файлами ('' = корень репозитория)
-  branch: 'main',
-  worker: 'https://morning-sunset-c3a6.romanpikula222.workers.dev',   // адрес вашего Cloudflare Worker
+    owner: 'qwerty1234567890z',
+    repo: 'protogentest.ru',
+    path: 'files',
+    branch: 'main',
+    worker: 'https://morning-sunset-c3a6.romanpikula222.workers.dev'
 };
-// =======================
+
+// ===============================
+// ПЕРЕМЕННЫЕ
+// ===============================
 
 const $ = id => document.getElementById(id);
+
 let files = [];
 
 function fmtSize(n) {
-  if (n < 1024) return n + ' Б';
-  if (n < 1048576) return (n / 1024).toFixed(1) + ' КБ';
-  return (n / 1048576).toFixed(1) + ' МБ';
+    if (n < 1024) return n + ' Б';
+    if (n < 1048576) return (n / 1024).toFixed(1) + ' КБ';
+    return (n / 1048576).toFixed(1) + ' МБ';
 }
+
+// ===============================
+// ЗАГРУЗКА ФАЙЛОВ ИЗ GITHUB
+// ===============================
 
 async function loadFiles() {
-  const dir = CONFIG.path ? '/' + CONFIG.path : '';
-  const api = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents${dir}?ref=${CONFIG.branch}`;
-  try {
-    const r = await fetch(api);
-    if (r.status === 403 || r.status === 429) throw new Error('Лимит GitHub API, попробуйте через час.');
-    if (!r.ok) throw new Error('Не удалось загрузить список файлов.');
-    const data = await r.json();
-    files = Array.isArray(data) ? data.filter(f => f.type === 'file' && !f.name.startsWith('.')) : [];
-    render();
-  } catch (e) {
-    $('list').textContent = e.message;
-  }
+    const api =
+        `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/git/trees/${CONFIG.branch}?recursive=1`;
+
+    try {
+        const response = await fetch(api);
+
+        if (response.status === 403 || response.status === 429) {
+            throw new Error('Лимит GitHub API. Попробуйте позже.');
+        }
+
+        if (!response.ok) {
+            throw new Error('Не удалось загрузить файлы из GitHub.');
+        }
+
+        const data = await response.json();
+
+        if (!Array.isArray(data.tree)) {
+            throw new Error('GitHub вернул некорректный список файлов.');
+        }
+
+        if (data.truncated) {
+            throw new Error('Слишком большой каталог GitHub. Список может быть неполным.');
+        }
+
+        files = data.tree
+            .filter(file =>
+                file.type === 'blob' &&
+                file.path.startsWith(CONFIG.path + '/') &&
+                !file.path.split('/').some(part => part.startsWith('.'))
+            )
+            .map(file => ({
+                name: file.path.split('/').pop(),
+                path: file.path,
+                size: file.size,
+                download_url:
+                    `https://raw.githubusercontent.com/${CONFIG.owner}/${CONFIG.repo}/${CONFIG.branch}/` +
+                    file.path.split('/').map(encodeURIComponent).join('/')
+            }));
+
+        render();
+
+    } catch (error) {
+        $('list').replaceChildren();
+
+        const message = document.createElement('div');
+        message.className = 'empty error';
+        message.textContent = error.message;
+
+        $('list').appendChild(message);
+    }
 }
+
+// ===============================
+// ПОСТРОЕНИЕ ДЕРЕВА ПАПОК
+// ===============================
+
+function buildTree(list) {
+    const root = { folders: {}, files: [] };
+
+    for (const file of list) {
+        const relativePath = file.path
+            .slice(CONFIG.path.length + 1);
+
+        const parts = relativePath.split('/');
+        let current = root;
+
+        for (let i = 0; i < parts.length - 1; i++) {
+            const folder = parts[i];
+
+            if (!current.folders[folder]) {
+                current.folders[folder] = {
+                    folders: {},
+                    files: []
+                };
+            }
+
+            current = current.folders[folder];
+        }
+
+        current.files.push(file);
+    }
+
+    return root;
+}
+
+// ===============================
+// ОТОБРАЖЕНИЕ КАТАЛОГА
+// ===============================
 
 function render() {
-  const q = $('search').value.trim().toLowerCase();
-  const items = files.filter(f => f.name.toLowerCase().includes(q));
-  const box = $('list');
-  box.replaceChildren();
-  if (!items.length) {
-    const p = document.createElement('div');
-    p.className = 'empty';
-    p.textContent = files.length ? 'Ничего не найдено. Оставьте запрос в форме ниже.' : 'Файлов пока нет.';
-    box.appendChild(p);
-    return;
-  }
-  for (const f of items) {
-    const row = document.createElement('div');
-    row.className = 'file';
-    const name = document.createElement('span');
-    name.className = 'name';
-    name.textContent = f.name;
-    const size = document.createElement('small');
-    size.textContent = fmtSize(f.size);
-    name.appendChild(size);
-    const btn = document.createElement('button');
-    btn.className = 'dl';
-    btn.textContent = 'Скачать';
-    btn.onclick = () => download(f, btn);
-    row.append(name, btn);
-    box.appendChild(row);
-  }
+    const query = $('search').value.trim().toLowerCase();
+    const box = $('list');
+
+    box.replaceChildren();
+
+    const filtered = files.filter(file =>
+        file.name.toLowerCase().includes(query) ||
+        file.path.toLowerCase().includes(query)
+    );
+
+    if (!filtered.length) {
+        const empty = document.createElement('div');
+        empty.className = 'empty';
+        empty.textContent = query
+            ? 'Ничего не найдено.'
+            : 'Файлов пока нет.';
+
+        box.appendChild(empty);
+        return;
+    }
+
+    const tree = buildTree(filtered);
+
+    renderFolderContent(box, tree, query);
 }
 
-async function download(f, btn) {
-  btn.disabled = true;
-  try {
-    const r = await fetch(f.download_url);
-    if (!r.ok) throw new Error('download failed');
-    const url = URL.createObjectURL(await r.blob());
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = f.name;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
-  } catch {
-    window.open(f.download_url, '_blank', 'noopener');   // запасной вариант
-  } finally {
-    btn.disabled = false;
-  }
+function renderFolderContent(container, node, query) {
+    const folders = Object.keys(node.folders).sort((a, b) =>
+        a.localeCompare(b)
+    );
+
+    for (const folderName of folders) {
+        const details = document.createElement('details');
+        details.className = 'folder';
+
+        if (query) details.open = true;
+
+        const summary = document.createElement('summary');
+
+        const arrow = document.createElement('span');
+        arrow.className = 'arrow';
+        arrow.textContent = '▶';
+
+        const icon = document.createElement('span');
+        icon.className = 'folder-icon';
+        icon.textContent = '📁';
+
+        const name = document.createElement('span');
+        name.textContent = folderName;
+
+        summary.append(arrow, icon, name);
+
+        const content = document.createElement('div');
+        content.className = 'folder-content';
+
+        renderFolderContent(
+            content,
+            node.folders[folderName],
+            query
+        );
+
+        details.append(summary, content);
+        container.appendChild(details);
+    }
+
+    node.files.sort((a, b) => a.name.localeCompare(b.name));
+
+    for (const file of node.files) {
+        container.appendChild(createFileElement(file));
+    }
 }
+
+// ===============================
+// ЭЛЕМЕНТ ФАЙЛА
+// ===============================
+
+function createFileElement(file) {
+    const row = document.createElement('div');
+    row.className = 'file';
+
+    const info = document.createElement('div');
+    info.className = 'file-info';
+
+    const icon = document.createElement('span');
+    icon.className = 'file-icon';
+    icon.textContent = '▤';
+
+    const text = document.createElement('div');
+
+    const name = document.createElement('div');
+    name.className = 'file-name';
+    name.textContent = file.name;
+
+    const size = document.createElement('div');
+    size.className = 'file-size';
+    size.textContent = fmtSize(file.size);
+
+    text.append(name, size);
+    info.append(icon, text);
+
+    const button = document.createElement('button');
+    button.className = 'download';
+    button.textContent = 'Скачать';
+    button.type = 'button';
+
+    button.addEventListener('click', () => download(file, button));
+
+    row.append(info, button);
+
+    return row;
+}
+
+// ===============================
+// СКАЧИВАНИЕ
+// ===============================
+
+async function download(file, button) {
+    button.disabled = true;
+    button.textContent = 'Загрузка...';
+
+    try {
+        const response = await fetch(file.download_url);
+
+        if (!response.ok) {
+            throw new Error('Не удалось скачать файл.');
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = file.name;
+
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+
+        setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+    } catch {
+        window.open(file.download_url, '_blank', 'noopener');
+    } finally {
+        button.disabled = false;
+        button.textContent = 'Скачать';
+    }
+}
+
+// ===============================
+// ПОИСК
+// ===============================
 
 $('search').addEventListener('input', render);
 
-$('form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const status = $('status');
-  const btn = $('send');
-  const text = $('text').value.trim();
-  const contact = $('contact').value.trim();
-  const set = (msg, cls) => { status.textContent = msg; status.className = cls; };
+// ===============================
+// ОТПРАВКА ЗАЯВКИ
+// ===============================
 
-  if (!text) return set('Опишите, что нужно.', 'err');
-  if (!/^@?[A-Za-z0-9_]{5,32}$/.test(contact))
-    return set('Укажите Telegram в формате @username (5–32 символа: буквы, цифры, _).', 'err');
+$('form').addEventListener('submit', async event => {
+    event.preventDefault();
 
-  btn.disabled = true;
-  set('Отправляем…', '');
-  try {
-    const r = await fetch(CONFIG.worker + '/request', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, contact, website: $('website').value }),
-    });
-    if (r.ok) {
-      set('Запрос отправлен. Я напишу вам в Telegram.', 'ok');
-      $('form').reset();
-    } else if (r.status === 429) {
-      set('Слишком много запросов. Попробуйте позже.', 'err');
-    } else {
-      set('Не удалось отправить. Проверьте текст и @username.', 'err');
+    const status = $('status');
+    const button = $('send');
+
+    const text = $('text').value.trim();
+    const contact = $('contact').value.trim();
+
+    function setStatus(message, type = '') {
+        status.textContent = message;
+        status.className = type;
     }
-  } catch {
-    set('Нет связи с сервером. Попробуйте ещё раз.', 'err');
-  } finally {
-    btn.disabled = false;
-  }
+
+    if (!text) {
+        return setStatus('Опишите, что нужно сделать.', 'err');
+    }
+
+    if (!/^@?[A-Za-z0-9_]{5,32}$/.test(contact)) {
+        return setStatus(
+            'Укажите Telegram в формате @username.',
+            'err'
+        );
+    }
+
+    button.disabled = true;
+    setStatus('Отправляем запрос...');
+
+    try {
+        const response = await fetch(CONFIG.worker + '/request', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                text,
+                contact,
+                website: $('website').value
+            })
+        });
+
+        if (response.ok) {
+            setStatus(
+                'Запрос успешно отправлен! Я напишу вам в Telegram.',
+                'ok'
+            );
+
+            $('form').reset();
+
+        } else if (response.status === 429) {
+            setStatus(
+                'Слишком много запросов. Попробуйте позже.',
+                'err'
+            );
+
+        } else {
+            setStatus(
+                'Не удалось отправить запрос. Попробуйте ещё раз.',
+                'err'
+            );
+        }
+
+    } catch {
+        setStatus(
+            'Нет связи с сервером. Попробуйте ещё раз.',
+            'err'
+        );
+
+    } finally {
+        button.disabled = false;
+    }
 });
 
+// ===============================
+// ЗАПУСК
+// ===============================
+
 loadFiles();
+
 </script>
 </body>
 </html>
+```
