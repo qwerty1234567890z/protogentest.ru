@@ -1,36 +1,186 @@
-
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мой сайт</title>
-    <style>
-        body {
-            background: #20202a;
-            color: white;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            padding: 50px;
-        }
-
-        h1 {
-            color: #b48ead;
-        }
-
-        button {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Файлы — protogentest.ru</title>
+<style>
+  :root{--bg:#fbfbf9;--fg:#1d2321;--muted:#68726e;--line:#dcdfdb;--accent:#0f6b5c;--accent-fg:#fff;--err:#b3261e;--ok:#0f6b5c}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#141817;--fg:#e8ece9;--muted:#98a39e;--line:#2d3532;--accent:#4fc3ad;--accent-fg:#0b1512;--err:#ff8a80;--ok:#4fc3ad}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+  main{max-width:44rem;margin:0 auto;padding:2.5rem 1.2rem 4rem}
+  h1{font-size:2rem;margin:0 0 .3rem;letter-spacing:-.01em}
+  h2{font-size:1.25rem;margin:3rem 0 .3rem}
+  .lead{color:var(--muted);margin:0 0 1.5rem}
+  input,textarea,button{font:inherit;color:inherit}
+  input,textarea{width:100%;padding:.6rem .7rem;border:1px solid var(--line);border-radius:6px;background:transparent}
+  input:focus-visible,textarea:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  label{display:block;margin:1rem 0 .25rem;font-weight:600}
+  .hint{color:var(--muted);font-size:.9rem;margin:0 0 .3rem}
+  button.primary{margin-top:1.1rem;padding:.6rem 1.2rem;border:0;border-radius:6px;background:var(--accent);color:var(--accent-fg);font-weight:600;cursor:pointer}
+  button.dl{padding:.4rem .9rem;border:1px solid var(--accent);border-radius:6px;background:transparent;color:var(--accent);cursor:pointer;white-space:nowrap}
+  button:disabled{opacity:.55;cursor:default}
+  .file{display:flex;justify-content:space-between;align-items:center;gap:1rem;padding:.75rem 0;border-bottom:1px solid var(--line)}
+  .file .name{overflow-wrap:anywhere}
+  .file small{color:var(--muted);margin-left:.4rem}
+  #list{margin-top:1rem}
+  .empty{color:var(--muted);padding:1rem 0}
+  #status{min-height:1.5rem;margin:.8rem 0 0}
+  #status.ok{color:var(--ok)} #status.err{color:var(--err)}
+  .hp{position:absolute;left:-9999px;width:1px;height:1px;opacity:0}
+</style>
 </head>
 <body>
-    <h1>Привет, мир! :3</h1>
-    <p>Это мой первый сайт на GitHub Pages!</p>
-    <button onclick="alert('Привет!')">
-        Нажми меня
-    </button>
+<main>
+  <h1>Файлы</h1>
+  <p class="lead">Выберите файл и скачайте. Если нужного нет, оставьте запрос ниже.</p>
+
+  <input id="search" type="search" placeholder="Поиск по названию" aria-label="Поиск по названию">
+  <div id="list" aria-live="polite">Загрузка…</div>
+
+  <h2>Не нашли нужный файл?</h2>
+  <p class="lead">Опишите, что нужно. Я напишу вам в Telegram, когда он будет готов.</p>
+
+  <form id="form" novalidate>
+    <label for="text">Что нужно сделать</label>
+    <p class="hint">Требования, версия, язык, любые детали.</p>
+    <textarea id="text" rows="6" maxlength="1500" required></textarea>
+
+    <label for="contact">Ваш Telegram</label>
+    <input id="contact" placeholder="@username" autocomplete="off" required>
+
+    <input class="hp" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <button class="primary" id="send" type="submit">Отправить запрос</button>
+    <p id="status" role="status"></p>
+  </form>
+</main>
+
+<script>
+// ====== НАСТРОЙКИ ======
+const CONFIG = {
+  owner:  'qwerty1234567890z',                          // ваш логин на GitHub
+  repo:   'protogentest.ru',                                 // репозиторий, где лежат файлы
+  path:   'files',                                // папка с файлами ('' = корень репозитория)
+  branch: 'main',
+  worker: 'protogentest-ru.romanpikula222.workers.dev',   // адрес вашего Cloudflare Worker
+};
+// =======================
+
+const $ = id => document.getElementById(id);
+let files = [];
+
+function fmtSize(n) {
+  if (n < 1024) return n + ' Б';
+  if (n < 1048576) return (n / 1024).toFixed(1) + ' КБ';
+  return (n / 1048576).toFixed(1) + ' МБ';
+}
+
+async function loadFiles() {
+  const dir = CONFIG.path ? '/' + CONFIG.path : '';
+  const api = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents${dir}?ref=${CONFIG.branch}`;
+  try {
+    const r = await fetch(api);
+    if (r.status === 403 || r.status === 429) throw new Error('Лимит GitHub API, попробуйте через час.');
+    if (!r.ok) throw new Error('Не удалось загрузить список файлов.');
+    const data = await r.json();
+    files = Array.isArray(data) ? data.filter(f => f.type === 'file' && !f.name.startsWith('.')) : [];
+    render();
+  } catch (e) {
+    $('list').textContent = e.message;
+  }
+}
+
+function render() {
+  const q = $('search').value.trim().toLowerCase();
+  const items = files.filter(f => f.name.toLowerCase().includes(q));
+  const box = $('list');
+  box.replaceChildren();
+  if (!items.length) {
+    const p = document.createElement('div');
+    p.className = 'empty';
+    p.textContent = files.length ? 'Ничего не найдено. Оставьте запрос в форме ниже.' : 'Файлов пока нет.';
+    box.appendChild(p);
+    return;
+  }
+  for (const f of items) {
+    const row = document.createElement('div');
+    row.className = 'file';
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = f.name;
+    const size = document.createElement('small');
+    size.textContent = fmtSize(f.size);
+    name.appendChild(size);
+    const btn = document.createElement('button');
+    btn.className = 'dl';
+    btn.textContent = 'Скачать';
+    btn.onclick = () => download(f, btn);
+    row.append(name, btn);
+    box.appendChild(row);
+  }
+}
+
+async function download(f, btn) {
+  btn.disabled = true;
+  try {
+    const r = await fetch(f.download_url);
+    if (!r.ok) throw new Error('download failed');
+    const url = URL.createObjectURL(await r.blob());
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = f.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  } catch {
+    window.open(f.download_url, '_blank', 'noopener');   // запасной вариант
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+$('search').addEventListener('input', render);
+
+$('form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const status = $('status');
+  const btn = $('send');
+  const text = $('text').value.trim();
+  const contact = $('contact').value.trim();
+  const set = (msg, cls) => { status.textContent = msg; status.className = cls; };
+
+  if (!text) return set('Опишите, что нужно.', 'err');
+  if (!/^@?[A-Za-z0-9_]{5,32}$/.test(contact))
+    return set('Укажите Telegram в формате @username (5–32 символа: буквы, цифры, _).', 'err');
+
+  btn.disabled = true;
+  set('Отправляем…', '');
+  try {
+    const r = await fetch(CONFIG.worker + '/request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, contact, website: $('website').value }),
+    });
+    if (r.ok) {
+      set('Запрос отправлен. Я напишу вам в Telegram.', 'ok');
+      $('form').reset();
+    } else if (r.status === 429) {
+      set('Слишком много запросов. Попробуйте позже.', 'err');
+    } else {
+      set('Не удалось отправить. Проверьте текст и @username.', 'err');
+    }
+  } catch {
+    set('Нет связи с сервером. Попробуйте ещё раз.', 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+loadFiles();
+</script>
 </body>
 </html>
