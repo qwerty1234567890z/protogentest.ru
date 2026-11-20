@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Админка</title>
+<style>
+  :root{--bg:#fbfbf9;--fg:#1d2321;--muted:#68726e;--line:#dcdfdb;--accent:#0f6b5c;--accent-fg:#fff;--err:#b3261e}
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#141817;--fg:#e8ece9;--muted:#98a39e;--line:#2d3532;--accent:#4fc3ad;--accent-fg:#0b1512;--err:#ff8a80}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+  main{max-width:44rem;margin:0 auto;padding:2.5rem 1.2rem 4rem}
+  h1{font-size:1.8rem;margin:0}
+  input,button{font:inherit;color:inherit}
+  input[type=password]{padding:.6rem .7rem;border:1px solid var(--line);border-radius:6px;background:transparent;min-width:14rem}
+  button,a.btn{display:inline-block;padding:.4rem .9rem;border:1px solid var(--line);border-radius:6px;background:transparent;cursor:pointer;text-decoration:none;color:inherit}
+  button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-fg);font-weight:600}
+  button:disabled{opacity:.55;cursor:default}
+  input:focus-visible,button:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .row{display:flex;gap:.6rem;align-items:center;flex-wrap:wrap}
+  .between{justify-content:space-between}
+  .ticket{border:1px solid var(--line);border-radius:8px;padding:1rem;margin:.9rem 0}
+  .ticket.closed{opacity:.55}
+  .ticket p{white-space:pre-wrap;overflow-wrap:anywhere;margin:.5rem 0 .8rem}
+  small,.muted{color:var(--muted)}
+  #err{color:var(--err);min-height:1.5rem}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+<main>
+  <section id="login">
+    <h1>Вход</h1>
+    <div class="row" style="margin-top:1rem">
+      <input id="pw" type="password" placeholder="Пароль" autocomplete="current-password" aria-label="Пароль">
+      <button class="primary" id="go">Войти</button>
+    </div>
+    <p id="err" role="alert"></p>
+  </section>
+
+  <section id="panel" hidden>
+    <div class="row between">
+      <h1>Запросы</h1>
+      <div class="row">
+        <label class="row"><input type="checkbox" id="showClosed"> Показать закрытые</label>
+        <button id="refresh">Обновить</button>
+        <button id="logout">Выйти</button>
+      </div>
+    </div>
+    <div id="tickets"></div>
+  </section>
+</main>
+
+<script>
+const WORKER = 'protogentest-ru.romanpikula222.workers.dev';   // адрес вашего Cloudflare Worker
+
+const $ = id => document.getElementById(id);
+let tickets = [];
+
+const store = {
+  get() { try { return sessionStorage.getItem('adm'); } catch { return null; } },
+  set(v) { try { sessionStorage.setItem('adm', v); } catch {} },
+  del() { try { sessionStorage.removeItem('adm'); } catch {} },
+};
+let token = store.get();
+
+async function api(path, opts = {}) {
+  const r = await fetch(WORKER + path, {
+    ...opts,
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+  });
+  if (r.status === 401) logout();
+  return r;
+}
+
+async function login() {
+  $('err').textContent = '';
+  $('go').disabled = true;
+  try {
+    const r = await fetch(WORKER + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: $('pw').value }),
+    });
+    if (r.status === 429) { $('err').textContent = 'Слишком много попыток. Подождите 15 минут.'; return; }
+    if (!r.ok) { $('err').textContent = 'Неверный пароль.'; return; }
+    token = (await r.json()).token;
+    store.set(token);
+    $('pw').value = '';
+    await show();
+  } catch {
+    $('err').textContent = 'Нет связи с сервером.';
+  } finally {
+    $('go').disabled = false;
+  }
+}
+
+function logout() {
+  store.del();
+  token = null;
+  $('panel').hidden = true;
+  $('login').hidden = false;
+}
+
+async function show() {
+  if (!token) return;
+  try {
+    const r = await api('/tickets');
+    if (!r.ok) return;
+    tickets = await r.json();
+    $('login').hidden = true;
+    $('panel').hidden = false;
+    render();
+  } catch {
+    $('login').hidden = false;
+    $('err').textContent = 'Нет связи с сервером.';
+  }
+}
+
+function render() {
+  const box = $('tickets');
+  box.replaceChildren();
+  const items = tickets.filter(t => $('showClosed').checked || t.status === 'open');
+  if (!items.length) {
+    const p = document.createElement('p');
+    p.className = 'muted';
+    p.textContent = 'Открытых запросов нет.';
+    box.appendChild(p);
+    return;
+  }
+  for (const t of items) {
+    const card = document.createElement('div');
+    card.className = 'ticket ' + t.status;
+
+    const meta = document.createElement('small');
+    meta.textContent = new Date(t.createdAt).toLocaleString('ru-RU') + ', ' + t.contact;
+
+    const text = document.createElement('p');
+    text.textContent = t.text;                       // textContent защищает от XSS
+
+    const row = document.createElement('div');
+    row.className = 'row';
+
+    const write = document.createElement('a');
+    write.className = 'btn';
+    write.target = '_blank';
+    write.rel = 'noopener';
+    write.href = 'https://t.me/' + encodeURIComponent(t.contact.replace(/^@/, ''));
+    write.textContent = 'Написать в Telegram';
+    row.appendChild(write);
+
+    if (t.status === 'open') {
+      const close = document.createElement('button');
+      close.className = 'primary';
+      close.textContent = 'Закрыть запрос';
+      close.onclick = async () => {
+        close.disabled = true;
+        await api(`/tickets/${encodeURIComponent(t.id)}/close`, { method: 'POST' });
+        show();
+      };
+      row.appendChild(close);
+    } else {
+      const s = document.createElement('small');
+      s.textContent = 'Закрыт ' + new Date(t.closedAt).toLocaleString('ru-RU');
+      row.appendChild(s);
+    }
+    card.append(meta, text, row);
+    box.appendChild(card);
+  }
+}
+
+$('go').onclick = login;
+$('pw').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+$('logout').onclick = logout;
+$('refresh').onclick = show;
+$('showClosed').onchange = render;
+show();
+</script>
+</body>
+</html>
